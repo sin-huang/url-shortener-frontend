@@ -1,9 +1,8 @@
 <script setup>
-import TranformUrlView from './views/TranformUrlView.vue';
 </script>
 
 <template>
-  <TranformUrlView />
+  <router-view/>
 </template>
 
 <style scoped></style>
