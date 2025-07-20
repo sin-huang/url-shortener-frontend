@@ -11,7 +11,7 @@ const shortCode = route.params.shortCode
 
 const verifyPassword = async () => {
   try {
-    const res = await axios.post(`http://localhost:3000/verify`, {
+    const res = await axios.post(`${backendurl}/verify`, {
       shortCode,
       password: password.value,
     })

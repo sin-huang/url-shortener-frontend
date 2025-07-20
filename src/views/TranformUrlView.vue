@@ -8,6 +8,8 @@ import axios from 'axios'
 import { DocumentDuplicateIcon, EyeIcon, EyeSlashIcon, CloudArrowDownIcon } from '@heroicons/vue/24/outline'
 import { toast } from 'vue3-toastify'
 
+const backendurl = import.meta.env.VITE_API_BASE_URL 
+
 const originalUrl = ref('')
 const shortUrl = ref('')
 const customUrl = ref('')
@@ -67,7 +69,7 @@ const handleSubmit = async () => {
   try {
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    const res = await axios.post('http://localhost:3000/shorten', {
+    const res = await axios.post(`${backendurl}/shorten`, {
       originalUrl: originalUrl.value,
       customUrl: customUrl.value || null,
       password: password.value || null,
