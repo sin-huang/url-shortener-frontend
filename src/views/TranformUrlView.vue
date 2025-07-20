@@ -7,14 +7,13 @@ import congratulationAnimation from "@/assets/congratulation.json";
 import axios from 'axios'
 import { DocumentDuplicateIcon, EyeIcon, EyeSlashIcon, CloudArrowDownIcon } from '@heroicons/vue/24/outline'
 import { toast } from 'vue3-toastify'
-import debounce from 'lodash/debounce'
 
 const originalUrl = ref('')
 const shortUrl = ref('')
 const customUrl = ref('')
 const password = ref('')
 const note = ref('')
-const enabled = ref(false)
+const enabled = ref(true)
 const showPassword = ref(false)
 const isLoadingPageInfo = ref(false)
 const loading = ref(false)
@@ -22,11 +21,6 @@ const copySuccess = ref(false)
 const errorMessage = ref('')
 const errors = ref({})
 
-const metaTitle = ref('')
-const metaDescription = ref('')
-const metaSummary = ref('')
-
-// 驗證 URL 格式
 const isValidUrl = (url) => {
   try {
     new URL(url)
@@ -36,7 +30,6 @@ const isValidUrl = (url) => {
   }
 }
 
-// 驗證邏輯
 const validateForm = () => {
   const newErrors = {}
 
@@ -64,7 +57,6 @@ const validateForm = () => {
   return Object.keys(newErrors).length === 0
 }
 
-// 模擬送出
 const handleSubmit = async () => {
   if (!validateForm()) return
 
@@ -73,16 +65,13 @@ const handleSubmit = async () => {
   shortUrl.value = ''
 
   try {
-    // 模擬延遲
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
     const res = await axios.post('http://localhost:3000/shorten', {
       originalUrl: originalUrl.value,
       customUrl: customUrl.value || null,
       password: password.value || null,
-      title: metaTitle.value,
-      description: metaDescription.value,
-      summary: metaSummary.value,
+      note: note.value || null,
     })
 
     shortUrl.value = res.data.shortUrl
@@ -101,6 +90,27 @@ const handleSubmit = async () => {
   }
 }
 
+const fetchPageNote = async () => {
+  if (!customUrl.value) return
+
+  isLoadingPageInfo.value = true
+  const shortCode = customUrl.value
+
+  try {
+    const res = await axios.get(`${shortCode}/note`)
+    if (res.data.note) {
+      note.value = res.data.note
+    } else {
+      note.value = '查無備註內容'
+    }
+  } catch (err) {
+    note.value = '無法取得備註內容'
+    console.error(err)
+  } finally {
+    isLoadingPageInfo.value = false
+  }
+}
+
 const copyToClipboard = async () => {
   if (!customUrl.value) return
   try {
@@ -114,43 +124,26 @@ const copyToClipboard = async () => {
   }
 }
 
-const fetchPageMeta = async () => {
-  if (!originalUrl.value) return
+watch(enabled, async (val) => {
+  if (!shortUrl.value) return
 
-  isLoadingPageInfo.value = true
   try {
-    const res = await axios.post('http://localhost:3000/fetch-meta', {
-      url: originalUrl.value,
+    await axios.patch(`${shortUrl.value}/enabled`, {
+      enabled: val,
     })
-
-    metaTitle.value = res.data.title
-    metaDescription.value = res.data.description
-    metaSummary.value = res.data.summary
-
-    note.value = `- 標題：${res.data.title}\n- 描述：${res.data.description}\n- 摘要：${res.data.summary}`
+    toast.success(`短網址已${val ? '啟用' : '停用'}`)
   } catch (err) {
-    note.value = '無法取得頁面資訊'
-    console.error(err)
-  } finally {
-    isLoadingPageInfo.value = false
-  }
-}
-
-const debouncedFetchMeta = debounce(fetchPageMeta, 800)
-
-watch(enabled, (val) => {
-  if (val && isValidUrl(originalUrl.value)) {
-    debouncedFetchMeta()
+    toast.error('更新啟用狀態失敗')
   }
 })
 </script>
 
 <template>
   <div class="relative">
-    <!-- 主要內容 -->
+
     <div class="p-8 max-w-4xl mx-auto space-y-6 bg-white rounded shadow transition-all duration-300"
       :class="{ 'pointer-events-none opacity-60 blur-sm': loading }">
-      <!-- Breadcrumb -->
+
       <div class="text-sm text-gray-500 space-x-2">
         <span>HOME</span>
         <span>&gt;</span>
@@ -159,9 +152,8 @@ watch(enabled, (val) => {
         <span class="text-black font-medium">新增短網址</span>
       </div>
 
-      <!-- 表單 -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- 連結 -->
+
         <div class="md:col-span-1 text-left">
           <label for="originalUrl" class="text-gray-500 block text-xs font-medium mb-1">連結</label>
           <input id="originalUrl" v-model="originalUrl" type="text" placeholder="請輸入或貼上完整的網址"
@@ -175,7 +167,6 @@ watch(enabled, (val) => {
           </p>
         </div>
 
-        <!-- 短網址 -->
         <div class="md:col-span-1 text-left">
           <label class="block text-gray-500 text-xs  font-medium mb-1">短網址</label>
           <div class="relative">
@@ -191,7 +182,6 @@ watch(enabled, (val) => {
           </p>
         </div>
 
-        <!-- 密碼保護 -->
         <div class="w-full md:col-span-1 text-left">
           <label class="block text-gray-500 text-xs font-medium mb-1">密碼保護</label>
 
@@ -212,12 +202,11 @@ watch(enabled, (val) => {
         </div>
       </div>
 
-      <!-- 備註說明 -->
       <div>
         <div class="flex mb-2 items-center">
           <span class="block text-sm font-medium text-gray-800 mr-2">備註說明</span>
           <div class="relative">
-            <button @click="fetchPageMeta" :disabled="isLoadingPageInfo"
+            <button @click="fetchPageNote" :disabled="isLoadingPageInfo"
               class="flex items-center gap-1 bg-black text-white px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-700 text-sm">
               <CloudArrowDownIcon class="w-4 h-4" />
               <span>{{ isLoadingPageInfo ? '讀取中...' : '取得頁面資訊' }}</span>
@@ -228,13 +217,11 @@ watch(enabled, (val) => {
           class="text-gray-800 w-full border border-gray-300 rounded px-3 py-2"></textarea>
       </div>
 
-      <!-- 是否啟用 -->
       <div class="flex items-center">
         <input id="enabled" type="checkbox" v-model="enabled" class="mr-2 w-4 h-4 text-blue-600" />
         <label for="enabled" class="text-sm font-medium text-gray-800">是否啟用</label>
       </div>
 
-      <!-- 送出按鈕 -->
       <div class="pt-4">
         <button @click="handleSubmit" :disabled="loading"
           class="px-4 py-1.5 rounded text-white bg-black hover:bg-gray-700 disabled:opacity-50">
@@ -242,17 +229,15 @@ watch(enabled, (val) => {
         </button>
       </div>
 
-      <!-- 成功提示區域 -->
       <Transition name="success" appear>
         <div v-if="shortUrl" class="mt-6 mx-auto max-w-2xl bg-white/70 backdrop-blur-md border border-white/30 shadow-lg rounded-xl px-6 py-4
            flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 text-sm">
-          <!-- 慶祝動畫 -->
+
           <div class="flex-shrink-0 flex justify-center sm:justify-start">
             <Vue3Lottie :animationData="congratulationAnimation" :height="50" :width="50" :loop="true"
               :autoplay="true" />
           </div>
 
-          <!-- 成功文字 -->
           <div
             class="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-gray-800 text-center sm:text-left w-full justify-center items-center">
             <span class="font-medium">短網址：</span>
@@ -275,12 +260,12 @@ watch(enabled, (val) => {
       </div>
     </div>
 
-    <!-- 載入遮罩與 Lottie 動畫 -->
+
     <Transition name="overlay">
       <div v-if="loading" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 backdrop-blur-sm">
         <div
           class="bg-white rounded-2xl p-8 flex flex-col items-center justify-center shadow-2xl border border-gray-100 animate-scale-in">
-          <!-- Lottie 貓咪動畫 -->
+
           <div class="w-40 h-40 mb-4">
             <Vue3Lottie :animationData="catAnimation" :height="160" :width="160" :loop="true" :autoplay="true" />
           </div>
@@ -288,7 +273,7 @@ watch(enabled, (val) => {
             <p class="text-gray-800 text-lg font-semibold mb-1">處理中</p>
             <p class="text-gray-500 text-sm">正在為您建立短網址...</p>
           </div>
-          <!-- 載入進度條動畫 -->
+
           <div class="w-48 h-1 bg-gray-200 rounded-full mt-4 overflow-hidden">
             <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-loading-bar"></div>
           </div>
@@ -299,7 +284,6 @@ watch(enabled, (val) => {
 </template>
 
 <style scoped>
-/* 成功提示動畫 */
 .success-enter-active {
   transition: all 0.6s ease-out;
 }
@@ -309,7 +293,6 @@ watch(enabled, (val) => {
   transform: translateY(20px) scale(0.95);
 }
 
-/* 遮罩進入/離開動畫 */
 .overlay-enter-active,
 .overlay-leave-active {
   transition: opacity 0.3s ease;
