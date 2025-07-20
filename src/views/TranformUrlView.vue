@@ -79,6 +79,7 @@ const handleSubmit = async () => {
 
     originalUrl.value = ''
     password.value = ''
+    note.value = ''
   } catch (err) {
     if (err.response?.status === 409) {
       errorMessage.value = '這個短網址已經被使用，請換一個'
