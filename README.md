@@ -16,6 +16,11 @@ Though they may appear different, they are inherently connected and interchangea
 
 ## DEMO 
 
+[![Demo Video](https://img.youtube.com/vi/_RE2fz2E9fE/0.jpg)](https://www.youtube.com/watch?v=_RE2fz2E9fE)
+
+### API documents
+👉 [Click me](https://reurl-backend.zeabur.app/api-docs)
+
 ## Tech Stack
 
 - [![Vue.js][Vue.js]][Vue-url]
@@ -50,8 +55,10 @@ Make sure you have Node.js and npm installed
    ```bash
    npm install
    ```
-   
-3. Start the development server
+3. Before running, copy the `.env.template` file and rename it to `.env`.
+   Then, fill in the required environment variables based on the provided template.
+
+4. Start the development server
    ```bash
    npm run dev
    ```
