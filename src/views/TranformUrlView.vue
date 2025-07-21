@@ -128,10 +128,10 @@ const copyToClipboard = async () => {
 }
 
 watch(enabled, async (val) => {
-  if (!shortUrl.value) return
-
+  if (!customUrl.value) return
+  
   try {
-    await axios.patch(`${shortUrl.value}/enabled`, {
+    await axios.patch(`${customUrl.value}/enabled`, {
       enabled: val,
     })
     toast.success(`短網址已${val ? '啟用' : '停用'}`)
